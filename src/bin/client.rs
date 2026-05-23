@@ -7,6 +7,7 @@ fn build_request(correlation_id: i32) -> Vec<u8> {
     let mut request = Vec::new();
 
     let mut header = Vec::new();
+
     let api_key: i16 = 18;
     let api_version: i16 = 4;
     
@@ -46,12 +47,10 @@ fn main() {
     let mut stream = TcpStream::connect(&address)
         .expect("failed to connect!");
 
-    // let hex = "0000001a0012000467890abc00096b61666b612d636c69000a6b61666b612d636c6904302e3100";
-    // let bytes = conversions::hex_to_bytes(hex);
-    let bytes = build_request(7);
+    let request: Vec<u8> = build_request(7);
 
     stream
-        .write_all(&bytes)
+        .write_all(&request)
         .expect("failed to write.");
 
     let mut buffer = [0; 1024];
