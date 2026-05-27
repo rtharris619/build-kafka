@@ -1,7 +1,6 @@
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use build_kafka::config::network::NETWORK_ADDRESS;
-// use build_kafka::utils::conversions;
 
 fn build_request(correlation_id: i32) -> Vec<u8> {
     let mut request = Vec::new();
@@ -41,25 +40,32 @@ fn build_request(correlation_id: i32) -> Vec<u8> {
     request
 }
 
+fn send_request(stream: &mut TcpStream, request: &[u8]) -> std::io::Result<Vec<u8>> {
+    stream.write_all(request)?;
+
+    let mut size_buffer = [0u8; 4];
+    let _ = stream.read_exact(&mut size_buffer);
+
+    let response_size = i32::from_be_bytes(size_buffer) as usize;
+
+    let mut response_buffer = vec![0u8; response_size];
+    let _ = stream.read_exact(&mut response_buffer)?;
+
+    Ok(response_buffer)
+}
+
 fn main() {
     let address = NETWORK_ADDRESS.address();
     let mut stream = TcpStream::connect(&address)
         .expect("failed to connect!");
 
-    // let hex = "0000001a0012000467890abc00096b61666b612d636c69000a6b61666b612d636c6904302e3100";
-    // let bytes = conversions::hex_to_bytes(hex);
-    let bytes = build_request(7);
+    let request_1 = build_request(7);
+    let response_1 = send_request(&mut stream, &request_1).expect("failed to send");
 
-    stream
-        .write_all(&bytes)
-        .expect("failed to write.");
+    println!("server replied: {:02X?}", &response_1);
 
-    let mut buffer = [0; 1024];
-    
-    let size = stream
-        .read(&mut buffer)
-        .expect("failed to read.");
+    let request_2 = build_request(8);
+    let response_2 = send_request(&mut stream, &request_2).expect("failed to send");
 
-    println!("server replied: {:02X?}", &buffer[..size]);
-    println!("size: {}", size);
+    println!("server replied: {:02X?}", &response_2);
 }
