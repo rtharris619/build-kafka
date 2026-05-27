@@ -6,6 +6,7 @@ fn build_request(correlation_id: i32) -> Vec<u8> {
     let mut request = Vec::new();
 
     let mut header = Vec::new();
+
     let api_key: i16 = 18;
     let api_version: i16 = 4;
     
