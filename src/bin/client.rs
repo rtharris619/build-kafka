@@ -1,6 +1,8 @@
+use core::num;
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use build_kafka::config::network::NETWORK_ADDRESS;
+use std::thread;
 
 fn build_request(correlation_id: i32) -> Vec<u8> {
     let mut request = Vec::new();
@@ -55,18 +57,37 @@ fn send_request(stream: &mut TcpStream, request: &[u8]) -> std::io::Result<Vec<u
     Ok(response_buffer)
 }
 
-fn main() {
+fn client_run(client_id: usize) {
     let address = NETWORK_ADDRESS.address();
-    let mut stream = TcpStream::connect(&address)
-        .expect("failed to connect!");
+    let mut stream = TcpStream::connect(&address).expect("failed to connect!");
 
     let request_1 = build_request(7);
     let response_1 = send_request(&mut stream, &request_1).expect("failed to send");
-
-    println!("server replied: {:02X?}", &response_1);
+    println!("[client {client_id}] server replied: {:02X?}", &response_1);
 
     let request_2 = build_request(8);
     let response_2 = send_request(&mut stream, &request_2).expect("failed to send");
+    println!("[client {client_id}] server replied: {:02X?}", &response_2);
+}
 
-    println!("server replied: {:02X?}", &response_2);
+fn single_client_connection() {
+    client_run(0);
+}
+
+fn multiple_client_connections() {
+    let num_clients = 3;
+    let mut handles = Vec::with_capacity(num_clients);
+
+    for i in 0..num_clients {
+        handles.push(thread::spawn(move || client_run(i)));
+    }
+
+    for handle in handles {
+        handle.join().expect("client thread panicked.")
+    }
+}
+
+fn main() {
+    // multiple_client_connections();
+    single_client_connection();
 }
